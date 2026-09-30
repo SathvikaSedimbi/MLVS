@@ -132,18 +132,32 @@ class RiskEngine:
             vis_score * w["visibility"]
         )
 
+        # Determine obstacle presence directly (ultrasonic distance < 150cm or IR obstacle detected)
+        obstacle_present = bool(
+            ir_active or
+            (front_dist is not None and front_dist < 150.0) or
+            (rear_dist is not None and rear_dist < 100.0)
+        )
+
         # Immediate overrides: if critical proximity or gas leak or immediate IR obstacle, clamp minimum score
-        if ir_active and effective_dist is not None and effective_dist <= DIST_CRITICAL_CM:
+        if ir_active or (effective_dist is not None and effective_dist <= DIST_CRITICAL_CM):
             composite_score = max(composite_score, 88.0)
+        elif obstacle_present:
+            # Obstacle presence sets risk to HIGH (minimum 65 score)
+            composite_score = max(composite_score, 65.0)
+        elif not gas_active and not (pir_score > 50):
+            # No obstacle and no gas/personnel emergency -> LOW risk
+            composite_score = min(composite_score, 20.0)
+
         if gas_active and composite_score < 70.0:
             composite_score = max(composite_score, 70.0)
 
         risk_score = round(max(0.0, min(100.0, composite_score)), 1)
 
-        # Determine Risk Level
+        # Determine Risk Level: HIGH when obstacle present, LOW when corridor clear
         if risk_score >= 80.0:
             risk_level = "CRITICAL"
-        elif risk_score >= 60.0:
+        elif risk_score >= 60.0 or obstacle_present:
             risk_level = "HIGH"
         elif risk_score >= 30.0:
             risk_level = "MEDIUM"
@@ -182,6 +196,11 @@ class RiskEngine:
             "risk_score": risk_score,
             "risk_level": risk_level,
             "state": risk_level if risk_level != "MEDIUM" else "WARNING",
+            "obstacle_present": obstacle_present,
+            "obstacle_status": "OBSTACLE DETECTED" if obstacle_present else "CORRIDOR CLEAR",
+            "obstacle_distance_m": round(effective_dist / 100.0, 2) if effective_dist is not None else None,
+            "ttc_ground_speed_sec": ttc_data.get("ttc_ground_speed_sec"),
+            "ground_speed_kmh": ttc_data.get("ground_speed_kmh", 0.0),
             "alerts": alerts,
             "recommended_action": recommended_action,
             "safe_path": safe_path,

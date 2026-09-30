@@ -93,9 +93,10 @@ class TelemetryService:
         # Step 1: Preprocess raw sensor data
         processed = self.preprocessor.process(raw_packet)
 
-        # Step 2: Calculate Kinematic TTC
+        # Step 2: Calculate Kinematic TTC (using ground speed and ultrasonic distance)
         front_dist_cm = processed["front_distance_cm"]["value"]
-        ttc = self.ttc_engine.calculate_ttc(front_dist_cm, processed["timestamp"])
+        ground_speed_kmh = processed.get("vehicle_speed_kmh", {}).get("value", 0.0)
+        ttc = self.ttc_engine.calculate_ttc(front_dist_cm, processed["timestamp"], ground_speed_kmh)
 
         # Step 3: Risk Engine Evaluation
         risk = self.risk_engine.evaluate(processed, ttc)

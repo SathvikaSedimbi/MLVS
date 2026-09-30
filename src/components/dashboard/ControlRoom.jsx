@@ -31,6 +31,7 @@ export const ControlRoom = () => {
 
   const tabs = [
     { id: 'OVERVIEW', label: 'DIGITAL COCKPIT', icon: LayoutDashboard },
+    { id: 'RISK_ENGINE', label: 'RISK ENGINE', icon: Brain },
     { id: 'DIGITAL_TWIN', label: 'TACTICAL RADAR', icon: Eye },
     { id: 'SYSTEM_HEALTH', label: 'DIAGNOSTICS & COMMS', icon: Activity }
   ];
@@ -140,6 +141,10 @@ export const ControlRoom = () => {
         {/* Dynamic Tab Views */}
         {activeDashboardTab === 'OVERVIEW' && (
           <ModernDigitalDisplay />
+        )}
+
+        {activeDashboardTab === 'RISK_ENGINE' && (
+          <RiskEnginePanel />
         )}
 
         {activeDashboardTab === 'DIGITAL_TWIN' && (
